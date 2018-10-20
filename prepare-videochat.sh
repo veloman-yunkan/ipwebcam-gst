@@ -255,6 +255,10 @@ start_adb() {
     can_run "$ADB" && "$ADB" $ADB_FLAGS start-server
 }
 
+stop_adb() {
+    can_run "$ADB" && "$ADB" $ADB_FLAGS kill-server
+}
+
 phone_plugged() {
     test "$("$ADB" $ADB_FLAGS get-state 2>/dev/null)" = "device"
 }
@@ -439,6 +443,11 @@ if [ -z "$DEVICE" ]; then
     fi
 fi
 
+# start adb daemon to avoid relaunching it in while
+if can_run "$ADB"; then
+  start_adb
+fi
+
 # Decide whether to connect through USB or through wi-fi
 IP=$WIFI_IP
 if ! can_run "$ADB"; then
@@ -461,11 +470,6 @@ fi
 BASE_URL=http://$IP:$PORT
 VIDEO_URL=$BASE_URL/videofeed
 AUDIO_URL=$BASE_URL/audio.$AUDIO_CODEC
-
-# start adb daemon to avoid relaunching it in while
-if can_run "$ADB"; then
-  start_adb
-fi
 
 # Remind the user to open up IP Webcam and start the server
 if phone_plugged && ! iw_server_is_started; then
@@ -598,6 +602,7 @@ kill $GSTLAUNCH_PID > /dev/null 2>&1 || echo ""
 pactl set-default-source ${DEFAULT_SOURCE}
 pactl unload-module ${ECANCEL_ID}
 pactl unload-module ${SINK_ID}
+stop_adb
 
 echo "Disconnected from IP Webcam. Have a nice day!"
 # idea: capture ctrl-c signal and set default source back
